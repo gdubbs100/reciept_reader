@@ -1,6 +1,6 @@
 
 # don't commit tokens
-./cohere_token.txt
+cohere_token.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
