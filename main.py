@@ -5,7 +5,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--file", type=str, help="file path to an image", default = './aldi.jpg'
+    "--file", type=str, help="file path to an image", default = './data/aldi.jpg'
 )
 parser.add_argument(
     "--message", 
@@ -37,7 +37,6 @@ tgt = [
 ]
 
 res = " ".join([res[1] for res in result])
-# print(res[tgt[0]+1:tgt[1]])
 print(res)
 
 
