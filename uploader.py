@@ -8,8 +8,12 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 from ocr_utils import extract_items
 
+entry_dict = dict()
+
 # Function to open file dialog and display the image
 def upload_image():
+
+    # get the file
     file_path = filedialog.askopenfilename(
         title="Select an Image",
         filetypes=[("Image files", "*.jpg *.jpeg *.png *.gif *.bmp")]
@@ -35,29 +39,64 @@ def upload_image():
 
         frame = tk.Frame(root)
         frame.pack(side=tk.RIGHT)
-        create_editable_fields(frame, items)
-        submit_btn = tk.Button(root, text="log data", command=lambda: write_json(items))
-        submit_btn.pack(pady=20)
 
-## I actually want to get the data from the entry fields
-def write_json(data):
-    with open('./test.json', 'w') as f:
-        json.dump(data, f)
+        create_entries(frame, items)
+        save_button = tk.Button(frame, text="Save to JSON", command=save_to_json)
+        save_button.pack(pady=10)
 
-def create_editable_fields(root, data):
+        new_upload = tk.Button(frame, text="New upload", command=lambda: frame.destroy())
+        new_upload.pack(pady=10)
 
-    for idx, (key, value) in enumerate(data.items()):
-        row_label = tk.Label(root, text=key)
-        row_label.grid(row=idx * (len(value) + 1), column=0, pady=10)
+# Function to create the Entry fields dynamically from the items dictionary
+def create_entries(parent, nested_dict):
+    for item, attributes in nested_dict.items():
+        # Create a labeled frame for each item
+        item_frame = tk.LabelFrame(parent, text=item)
+        item_frame.pack(padx=10, pady=5, fill="both", expand=True)
+        
+        entry_dict[item] = {}
+        attributes['name'] = item
+        for attribute, value in attributes.items():
+            # Create a label and entry for each attribute (price, quantity, etc.)
+            label = tk.Label(item_frame, text=f"{attribute.capitalize()}:")
+            label.pack(side="left", padx=5, pady=5)
 
-        for jdx, (jkey, jvalue) in enumerate(value.items()):
-            label = tk.Label(root, text=f"{jkey}:")
-            label.grid(row=idx * (len(value) + 1) + jdx + 1, column=1, padx=5)
+            entry = tk.Entry(item_frame)
+            try:
+                entry.insert(0, str(value))  # Insert the current value
+                entry.pack(side="left", padx=5, pady=5)
+            except:
+                print(f"something went wrong with: {value}")
+                entry = None
+            
+            # Save the entry widget reference in entry_dict
+            entry_dict[item][attribute] = entry
 
-            entry= tk.Entry(root)
-            entry.grid(row=idx * (len(value)+1) + jdx + 1, column =1, padx=5)
-            entry.insert(0, str(jvalue))
+# Function to save edits and export to a JSON file
+def save_to_json():
+    updated_data = {}
+    
+    # Iterate through the entry_dict and collect updated values
+    for _, attributes in entry_dict.items():
+        item = attributes["name"].get()
+        updated_data[item] = {}
+        for attribute, entry_widget in attributes.items():
+            value = entry_widget.get()
 
+            # Convert values back to appropriate types
+            if attribute == "price" or attribute == "weight":
+                updated_data[item][attribute] = float(value)
+            elif attribute == "quantity":
+                updated_data[item][attribute] = int(value)
+            elif attribute == "name":
+                pass
+            else:  # 'unit' is a string
+                updated_data[item][attribute] = value.lower()
+    # Write the updated data to a JSON file
+    with open('updated_items.json', 'w') as f:
+        json.dump(updated_data, f, indent=4)
+    
+    print("Saved to updated_items.json")
 
 if __name__=="__main__":
 
