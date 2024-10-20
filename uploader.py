@@ -6,6 +6,7 @@ import json
 
 from tkinter import filedialog
 from PIL import Image, ImageTk
+from datetime import date
 from ocr_utils import extract_items
 
 entry_dict = dict()
@@ -19,6 +20,8 @@ def upload_image():
         filetypes=[("Image files", "*.jpg *.jpeg *.png *.gif *.bmp")]
     )
     if file_path:
+        # disable the button
+        upload_btn.config(state="disabled")
 
         img = cv2.imread(file_path)
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -44,11 +47,30 @@ def upload_image():
         save_button = tk.Button(frame, text="Save to JSON", command=save_to_json)
         save_button.pack(pady=10)
 
-        new_upload = tk.Button(frame, text="New upload", command=lambda: frame.destroy())
-        new_upload.pack(pady=10)
+        new_upload_btn = tk.Button(frame, text="New upload", command=lambda: new_upload(frame))
+        new_upload_btn.pack(pady=10)
+
+def new_upload(frame):
+    frame.destroy()
+    upload_btn.config(state="normal")
 
 # Function to create the Entry fields dynamically from the items dictionary
 def create_entries(parent, nested_dict):
+
+    ## include the date
+    date_label = tk.Label(parent, text=f"Date:")
+    date_label.pack(side="top", padx=5, pady=5)
+    entry_dict['date'] = tk.Entry(parent)
+    entry_dict['date'].insert(0, date.today())
+    entry_dict['date'].pack(side="top", padx=5, pady=5)
+
+    ## include entry for the shop
+    shop_label = tk.Label(parent, text=f"Shop:")
+    shop_label.pack(side="top", padx=5, pady=5)
+    entry_dict['shop'] = tk.Entry(parent)
+    entry_dict['shop'].pack(side="top", padx=5, pady=5)
+
+    ## iterate through dict items
     for item, attributes in nested_dict.items():
         # Create a labeled frame for each item
         item_frame = tk.LabelFrame(parent, text=item)
@@ -77,21 +99,27 @@ def save_to_json():
     updated_data = {}
     
     # Iterate through the entry_dict and collect updated values
-    for _, attributes in entry_dict.items():
-        item = attributes["name"].get()
-        updated_data[item] = {}
-        for attribute, entry_widget in attributes.items():
-            value = entry_widget.get()
+    for key, attributes in entry_dict.items():
+        ## log the first two bits of data
+        if key in ['date', 'shop']:
+            updated_data[key] = attributes.get()
+        ## iterate through the items
+        else:
+            item = attributes["name"].get()
+            updated_data[item] = {}
+            for attribute, entry_widget in attributes.items():
+                value = entry_widget.get()
 
-            # Convert values back to appropriate types
-            if attribute == "price" or attribute == "weight":
-                updated_data[item][attribute] = float(value)
-            elif attribute == "quantity":
-                updated_data[item][attribute] = int(value)
-            elif attribute == "name":
-                pass
-            else:  # 'unit' is a string
-                updated_data[item][attribute] = value.lower()
+                # Convert values back to appropriate types
+                if attribute == "price" or attribute == "weight":
+                    updated_data[item][attribute] = float(value)
+                elif attribute == "quantity":
+                    updated_data[item][attribute] = int(value)
+                elif attribute == "name":
+                    pass
+                else:  # 'unit' is a string
+                    updated_data[item][attribute] = value.lower()
+
     # Write the updated data to a JSON file
     with open('updated_items.json', 'w') as f:
         json.dump(updated_data, f, indent=4)
