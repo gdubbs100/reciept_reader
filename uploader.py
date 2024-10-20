@@ -6,10 +6,18 @@ import json
 
 from tkinter import filedialog
 from PIL import Image, ImageTk
-from datetime import date
+from datetime import datetime, date
 from ocr_utils import extract_items
 
 entry_dict = dict()
+COUNTER = 0
+BASE_ATTRIBUTES = {
+    'price':0.0,
+    'quantity':0,
+    'weight':0.0,
+    'unit':'g',
+    'name':''
+}
 
 # Function to open file dialog and display the image
 def upload_image():
@@ -43,19 +51,59 @@ def upload_image():
         frame = tk.Frame(root)
         frame.pack(side=tk.RIGHT)
 
-        create_entries(frame, items)
         save_button = tk.Button(frame, text="Save to JSON", command=save_to_json)
-        save_button.pack(pady=10)
+        save_button.pack(side="left",pady=10)
 
         new_upload_btn = tk.Button(frame, text="New upload", command=lambda: new_upload(frame))
-        new_upload_btn.pack(pady=10)
+        new_upload_btn.pack(side="left",pady=10)
+
+        create_entries(frame, items)
+
 
 def new_upload(frame):
     frame.destroy()
     upload_btn.config(state="normal")
 
+def remove_frame(frame, item):
+    frame.destroy()
+    del entry_dict[item]
+
+## can I make this more generic to handle new items and items from ocr output???
+def add_entry_frame(parent):
+    global COUNTER
+    COUNTER +=1
+    item = f"new_item_{COUNTER}"
+    item_frame = tk.LabelFrame(parent, text=item)
+    item_frame.pack(padx=10, pady=5, fill="both", expand=True)
+
+    remove_btn = tk.Button(item_frame, text="Remove item", 
+        command=lambda f=item_frame,i=item: remove_frame(item_frame, item))
+    remove_btn.pack(side="right", padx=5, pady=5)
+
+    entry_dict[item] = {}
+    for attribute, value in BASE_ATTRIBUTES.items():
+        # Create a label and entry for each attribute (price, quantity, etc.)
+        label = tk.Label(item_frame, text=f"{attribute.capitalize()}:")
+        label.pack(side="left", padx=5, pady=5)
+
+        entry = tk.Entry(item_frame)
+        try:
+            entry.insert(0, str(value))  # Insert the current value
+            entry.pack(side="left", padx=5, pady=5)
+        except:
+            print(f"something went wrong with: {value}")
+            entry = None
+        
+        # Save the entry widget reference in entry_dict
+        entry_dict[item][attribute] = entry
+
 # Function to create the Entry fields dynamically from the items dictionary
 def create_entries(parent, nested_dict):
+    ## new item button
+    add_item_btn = tk.Button(
+        parent, text="Add item", 
+        command=lambda f=parent:add_entry_frame(f))
+    add_item_btn.pack(side="left", padx=5, pady=5)
 
     ## include the date
     date_label = tk.Label(parent, text=f"Date:")
@@ -75,6 +123,10 @@ def create_entries(parent, nested_dict):
         # Create a labeled frame for each item
         item_frame = tk.LabelFrame(parent, text=item)
         item_frame.pack(padx=10, pady=5, fill="both", expand=True)
+
+        remove_btn = tk.Button(item_frame, text="Remove item", 
+            command=lambda f=item_frame,i=item: remove_frame(item_frame, item))
+        remove_btn.pack(side="right", padx=5, pady=5)
         
         entry_dict[item] = {}
         attributes['name'] = item
@@ -94,9 +146,11 @@ def create_entries(parent, nested_dict):
             # Save the entry widget reference in entry_dict
             entry_dict[item][attribute] = entry
 
+
 # Function to save edits and export to a JSON file
 def save_to_json():
     updated_data = {}
+    filename = f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}_{entry_dict['shop'].get().lower()}.json"
     
     # Iterate through the entry_dict and collect updated values
     for key, attributes in entry_dict.items():
@@ -121,10 +175,10 @@ def save_to_json():
                     updated_data[item][attribute] = value.lower()
 
     # Write the updated data to a JSON file
-    with open('updated_items.json', 'w') as f:
+    with open(f"./data/ocr_output/{filename}", 'w') as f:
         json.dump(updated_data, f, indent=4)
     
-    print("Saved to updated_items.json")
+    print(f"Saved to ./data/ocr_output/{filename}")
 
 if __name__=="__main__":
 
