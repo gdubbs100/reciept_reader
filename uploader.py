@@ -68,20 +68,15 @@ def remove_frame(frame, item):
     frame.destroy()
     del entry_dict[item]
 
-## can I make this more generic to handle new items and items from ocr output???
-def add_entry_frame(parent):
-    global COUNTER
-    COUNTER +=1
-    item = f"new_item_{COUNTER}"
+def create_entry(item, parent, attribute_dict):
     item_frame = tk.LabelFrame(parent, text=item)
     item_frame.pack(padx=10, pady=5, fill="both", expand=True)
 
     remove_btn = tk.Button(item_frame, text="Remove item", 
         command=lambda f=item_frame,i=item: remove_frame(item_frame, item))
     remove_btn.pack(side="right", padx=5, pady=5)
-
-    entry_dict[item] = {}
-    for attribute, value in BASE_ATTRIBUTES.items():
+    entry_dict[item] = dict()
+    for attribute, value in attribute_dict.items():
         # Create a label and entry for each attribute (price, quantity, etc.)
         label = tk.Label(item_frame, text=f"{attribute.capitalize()}:")
         label.pack(side="left", padx=5, pady=5)
@@ -96,6 +91,14 @@ def add_entry_frame(parent):
         
         # Save the entry widget reference in entry_dict
         entry_dict[item][attribute] = entry
+
+## can I make this more generic to handle new items and items from ocr output???
+def add_entry_frame(parent):
+    global COUNTER
+    COUNTER +=1
+    item = f"new_item_{COUNTER}"
+    create_entry(item, parent, BASE_ATTRIBUTES)
+
 
 # Function to create the Entry fields dynamically from the items dictionary
 def create_entries(parent, nested_dict):
@@ -120,31 +123,8 @@ def create_entries(parent, nested_dict):
 
     ## iterate through dict items
     for item, attributes in nested_dict.items():
-        # Create a labeled frame for each item
-        item_frame = tk.LabelFrame(parent, text=item)
-        item_frame.pack(padx=10, pady=5, fill="both", expand=True)
-
-        remove_btn = tk.Button(item_frame, text="Remove item", 
-            command=lambda f=item_frame,i=item: remove_frame(item_frame, item))
-        remove_btn.pack(side="right", padx=5, pady=5)
-        
-        entry_dict[item] = {}
         attributes['name'] = item
-        for attribute, value in attributes.items():
-            # Create a label and entry for each attribute (price, quantity, etc.)
-            label = tk.Label(item_frame, text=f"{attribute.capitalize()}:")
-            label.pack(side="left", padx=5, pady=5)
-
-            entry = tk.Entry(item_frame)
-            try:
-                entry.insert(0, str(value))  # Insert the current value
-                entry.pack(side="left", padx=5, pady=5)
-            except:
-                print(f"something went wrong with: {value}")
-                entry = None
-            
-            # Save the entry widget reference in entry_dict
-            entry_dict[item][attribute] = entry
+        create_entry(item, parent, attributes)
 
 
 # Function to save edits and export to a JSON file
@@ -166,9 +146,9 @@ def save_to_json():
 
                 # Convert values back to appropriate types
                 if attribute == "price" or attribute == "weight":
-                    updated_data[item][attribute] = float(value)
+                    updated_data[item][attribute] = value#float(value)
                 elif attribute == "quantity":
-                    updated_data[item][attribute] = int(value)
+                    updated_data[item][attribute] = value#int(value)
                 elif attribute == "name":
                     pass
                 else:  # 'unit' is a string
