@@ -63,6 +63,8 @@ def upload_image():
 def new_upload(frame):
     frame.destroy()
     upload_btn.config(state="normal")
+    ## wipe the existing entry dict
+    entry_dict.clear()
 
 def remove_frame(frame, item):
     frame.destroy()
@@ -139,7 +141,12 @@ def save_to_json():
             updated_data[key] = attributes.get()
         ## iterate through the items
         else:
-            item = attributes["name"].get()
+            try:
+                item = attributes["name"].get()
+            except:
+                print("hmmmmm....")
+                print(attributes)
+                print([att.get() for att in attributes.get.values()])
             updated_data[item] = {}
             for attribute, entry_widget in attributes.items():
                 value = entry_widget.get()
